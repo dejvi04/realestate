@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AURUM ESTATES — Luxury Real Estate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#080808;--bg-card:#0f0f0f;--bg-elevated:#151515;--bg-modal:#0c0c0c;
+  --gold:#C9A84C;--gold-light:#E2C87A;--gold-dim:rgba(201,168,76,0.12);--gold-glow:rgba(201,168,76,0.25);
+  --text:#F2EDE4;--text-muted:#9A9085;--text-dim:#6B6560;
+  --border:rgba(201,168,76,0.12);--border-hover:rgba(201,168,76,0.4);
+  --transition:0.35s cubic-bezier(0.4,0,0.2,1);
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Jost',sans-serif;font-weight:300;overflow-x:hidden}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--gold);border-radius:2px}
+h1,h2,h3,h4{font-family:'Cormorant Garamond',serif;font-weight:300;letter-spacing:.02em}
+.section-label{font-family:'Jost',sans-serif;font-size:.68rem;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:1rem}
+.section-title{font-size:clamp(2.2rem,4vw,3.5rem);line-height:1.1;color:var(--text)}
+.gold-divider{width:60px;height:1px;background:var(--gold);margin:1.5rem 0}
+
+/* PRELOADER */
+#preloader{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;transition:opacity .8s ease,visibility .8s ease}
+#preloader.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.preloader-logo{font-family:'Cormorant Garamond',serif;font-size:2.8rem;font-weight:300;letter-spacing:.5em;color:var(--gold);animation:logoReveal 1.4s ease forwards}
+.preloader-sub{font-family:'Jost',sans-serif;font-size:.55rem;font-weight:500;letter-spacing:.5em;text-transform:uppercase;color:var(--text-dim);margin-top:.6rem;opacity:0;animation:fadeIn 1s .8s ease forwards}
+.preloader-bar{width:0;height:1px;background:linear-gradient(to right,transparent,var(--gold),transparent);margin-top:2rem;animation:barGrow 1.5s .3s ease forwards}
+@keyframes logoReveal{from{opacity:0;letter-spacing:1em}to{opacity:1;letter-spacing:.5em}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes barGrow{from{width:0}to{width:240px}}
+
+/* NAVIGATION */
+nav{position:fixed;top:0;left:0;right:0;z-index:900;padding:1.8rem 3rem;display:flex;align-items:center;justify-content:space-between;transition:background .4s ease,padding .4s ease,backdrop-filter .4s ease}
+nav.scrolled{background:rgba(8,8,8,.95);backdrop-filter:blur(20px);padding:1rem 3rem;border-bottom:1px solid var(--border)}
+.nav-logo{font-family:'Cormorant Garamond',serif;font-size:1.35rem;font-weight:400;letter-spacing:.3em;color:var(--gold);text-decoration:none;text-transform:uppercase;display:flex;align-items:center;gap:.5rem}
+.nav-logo-sep{display:inline-block;width:1px;height:.9em;background:var(--gold);opacity:.4}
+.nav-links{display:flex;gap:2.5rem;list-style:none}
+.nav-links a{font-family:'Jost',sans-serif;font-size:.7rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--text-muted);text-decoration:none;transition:color var(--transition);position:relative}
+.nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--gold);transition:width var(--transition)}
+.nav-links a:hover{color:var(--gold)}
+.nav-links a:hover::after{width:100%}
+.nav-actions{display:flex;align-items:center;gap:1.2rem}
+.btn-fav-nav{background:none;border:1px solid var(--border);color:var(--text-muted);padding:.5rem 1.2rem;font-family:'Jost',sans-serif;font-size:.68rem;font-weight:500;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;transition:all var(--transition);display:flex;align-items:center;gap:.5rem}
+.btn-fav-nav:hover{border-color:var(--gold);color:var(--gold)}
+.fav-count{background:var(--gold);color:#000;font-size:.58rem;font-weight:700;width:16px;height:16px;border-radius:50%;display:none;align-items:center;justify-content:center}
+.fav-count.show{display:flex}
+
+/* HERO */
+#hero{height:100vh;min-height:700px;position:relative;display:flex;align-items:flex-end;padding:0 3rem 6rem;overflow:hidden}
+.hero-bg{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(8,8,8,.35) 0%,rgba(8,8,8,.25) 40%,rgba(8,8,8,1) 100%),linear-gradient(to right,rgba(8,8,8,.65) 0%,transparent 65%),url('https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1920&q=80') center/cover no-repeat;transform:scale(1.06);transition:transform 8s ease}
+#hero.loaded .hero-bg{transform:scale(1)}
+.hero-content{position:relative;z-index:2;max-width:700px}
+.hero-eyebrow{font-family:'Jost',sans-serif;font-size:.65rem;font-weight:500;letter-spacing:.35em;text-transform:uppercase;color:var(--gold);margin-bottom:1.8rem;opacity:0;animation:fadeUp .8s .5s forwards;display:flex;align-items:center;gap:1rem}
+.hero-eyebrow::before{content:'';display:inline-block;width:40px;height:1px;background:var(--gold)}
+.hero-h1{font-family:'Cormorant Garamond',serif;font-size:clamp(3.5rem,7vw,7rem);font-weight:300;line-height:.95;color:var(--text);margin-bottom:2rem}
+.hero-h1 .line{display:block;opacity:0;transform:translateY(60px);animation:lineReveal .9s cubic-bezier(.16,1,.3,1) forwards}
+.hero-h1 .line:nth-child(1){animation-delay:.55s}
+.hero-h1 .line:nth-child(2){animation-delay:.75s;font-style:italic;color:var(--gold)}
+.hero-h1 .line:nth-child(3){animation-delay:.95s}
+.hero-p{font-size:.88rem;font-weight:300;color:var(--text-muted);line-height:1.9;max-width:420px;margin-bottom:2.5rem;opacity:0;animation:fadeUp .8s 1.15s forwards}
+.hero-cta{display:flex;gap:1rem;flex-wrap:wrap;opacity:0;animation:fadeUp .8s 1.35s forwards}
+.btn-primary{background:var(--gold);color:#000;border:none;padding:.9rem 2.5rem;font-family:'Jost',sans-serif;font-size:.72rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:all var(--transition);text-decoration:none;display:inline-flex;align-items:center;gap:.6rem}
+.btn-primary:hover{background:var(--gold-light);transform:translateY(-2px)}
+.btn-outline{background:transparent;color:var(--text);border:1px solid rgba(242,237,228,.2);padding:.9rem 2.5rem;font-family:'Jost',sans-serif;font-size:.72rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:all var(--transition);text-decoration:none;display:inline-flex;align-items:center}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.hero-stats{position:absolute;right:3rem;bottom:6rem;z-index:2;display:flex;flex-direction:column;gap:2rem;opacity:0;animation:fadeLeft .8s 1.6s forwards}
+.hero-stat-num{font-family:'Cormorant Garamond',serif;font-size:2.4rem;font-weight:300;color:var(--gold);line-height:1;text-align:right}
+.hero-stat-label{font-family:'Jost',sans-serif;font-size:.58rem;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);margin-top:.3rem;text-align:right}
+.hero-line{position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(to right,transparent 0%,var(--gold) 30%,var(--gold) 70%,transparent 100%);opacity:.15}
+.scroll-ind{position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);z-index:2;display:flex;flex-direction:column;align-items:center;gap:.5rem;opacity:0;animation:fadeUp .8s 2s forwards}
+.scroll-line{width:1px;height:48px;background:linear-gradient(to bottom,var(--gold),transparent);animation:scrollPulse 2.2s 2s ease infinite}
+.scroll-txt{font-family:'Jost',sans-serif;font-size:.52rem;letter-spacing:.3em;text-transform:uppercase;color:var(--text-dim)}
+@keyframes lineReveal{to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeLeft{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes scrollPulse{0%,100%{opacity:.3;transform:scaleY(.4);transform-origin:top}50%{opacity:1;transform:scaleY(1)}}
+
+/* QUICK SEARCH */
+#quick-search{background:var(--bg-card);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:0 3rem;position:sticky;top:0;z-index:800}
+.qs-inner{max-width:1300px;margin:0 auto;display:flex;gap:1px;background:var(--border)}
+.qs-field{flex:1;background:var(--bg-card);padding:1.3rem 1.5rem;display:flex;flex-direction:column;gap:.3rem;cursor:pointer;transition:background var(--transition)}
+.qs-field:hover{background:var(--bg-elevated)}
+.qs-lbl{font-family:'Jost',sans-serif;font-size:.58rem;font-weight:600;letter-spacing:.22em;text-transform:uppercase;color:var(--gold)}
+.qs-sel,.qs-inp{background:none;border:none;color:var(--text);font-family:'Jost',sans-serif;font-size:.85rem;font-weight:300;outline:none;width:100%;cursor:pointer}
+.qs-sel option,.qs-inp option{background:#111}
+.qs-inp::placeholder{color:var(--text-dim)}
+.qs-btn{background:var(--gold);border:none;color:#000;padding:0 2.5rem;font-family:'Jost',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transition:background var(--transition);white-space:nowrap}
+.qs-btn:hover{background:var(--gold-light)}
+
+/* PROPERTIES */
+#properties{padding:6rem 3rem;max-width:1400px;margin:0 auto}
+.section-hdr{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:3rem}
+.view-toggle{display:flex;gap:.4rem}
+.view-btn{background:none;border:1px solid var(--border);color:var(--text-dim);width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--transition);font-size:1rem;line-height:1}
+.view-btn.active,.view-btn:hover{border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
+.filter-bar{display:flex;gap:.5rem;margin-bottom:2rem;flex-wrap:wrap}
+.flt-sel{background:var(--bg-card);border:1px solid var(--border);color:var(--text-muted);padding:.55rem 2rem .55rem 1rem;font-family:'Jost',sans-serif;font-size:.72rem;font-weight:400;cursor:pointer;outline:none;transition:all var(--transition);appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23C9A84C' stroke-width='1.5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .7rem center}
+.flt-sel:hover,.flt-sel:focus{border-color:var(--gold);color:var(--text)}
+.flt-sel option{background:#111}
+.results-count{font-size:.72rem;font-weight:300;color:var(--text-dim);margin-bottom:1.5rem}
+.results-count em{color:var(--gold);font-style:normal;font-weight:500}
+#grid-view{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1px;background:var(--border)}
+.prop-card{background:var(--bg-card);cursor:pointer;overflow:hidden;position:relative}
+.prop-img-wrap{overflow:hidden;position:relative}
+.prop-img{width:100%;height:250px;object-fit:cover;display:block;transition:transform .6s ease;filter:brightness(.88)}
+.prop-card:hover .prop-img{transform:scale(1.05);filter:brightness(1)}
+.prop-badge{position:absolute;top:1rem;left:1rem;background:rgba(8,8,8,.82);border:1px solid var(--border);color:var(--gold);font-family:'Jost',sans-serif;font-size:.58rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;padding:.28rem .7rem;backdrop-filter:blur(8px)}
+.prop-fav{position:absolute;top:1rem;right:1rem;background:rgba(8,8,8,.68);border:1px solid var(--border);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--transition);backdrop-filter:blur(8px);font-size:.95rem;color:var(--text-muted);line-height:1}
+.prop-fav:hover,.prop-fav.on{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.12)}
+.prop-info{padding:1.4rem;border-top:1px solid var(--border)}
+.prop-price{font-family:'Cormorant Garamond',serif;font-size:1.65rem;font-weight:400;color:var(--gold);margin-bottom:.3rem}
+.prop-name{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--text);margin-bottom:.25rem}
+.prop-addr{font-size:.72rem;color:var(--text-dim);margin-bottom:.9rem;display:flex;align-items:center;gap:.3rem}
+.prop-stats{display:flex;gap:1.4rem;padding-top:.9rem;border-top:1px solid var(--border)}
+.p-stat{font-size:.7rem;color:var(--text-muted);display:flex;align-items:center;gap:.35rem}
+.p-stat b{color:var(--text);font-weight:400}
+.prop-hover-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(8,8,8,.95) 0%,transparent 55%);display:flex;align-items:flex-end;justify-content:center;padding-bottom:1.8rem;opacity:0;transition:opacity var(--transition)}
+.prop-card:hover .prop-hover-overlay{opacity:1}
+.btn-view{background:var(--gold);color:#000;border:none;padding:.65rem 1.8rem;font-family:'Jost',sans-serif;font-size:.66rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;cursor:pointer;transform:translateY(12px);transition:transform .35s ease,background var(--transition)}
+.prop-card:hover .btn-view{transform:translateY(0)}
+.btn-view:hover{background:var(--gold-light)}
+.no-results{text-align:center;padding:5rem 2rem;color:var(--text-dim);width:100%;background:var(--bg-card);font-size:.88rem;line-height:2}
+
+/* MAP */
+#map-view{display:none;height:580px;position:relative}
+#map-view.active{display:block}
+#leaflet-map{width:100%;height:100%;border:1px solid var(--border)}
+.leaflet-popup-content-wrapper{background:var(--bg-elevated)!important;border:1px solid var(--border)!important;border-radius:0!important;color:var(--text)!important;box-shadow:0 10px 40px rgba(0,0,0,.6)!important}
+.leaflet-popup-tip{background:var(--bg-elevated)!important}
+.map-pop{padding:.4rem;min-width:170px}
+.map-pop-price{font-family:'Cormorant Garamond',serif;font-size:1.25rem;color:var(--gold);margin-bottom:.2rem}
+.map-pop-name{font-family:'Cormorant Garamond',serif;font-size:.88rem;color:var(--text);margin-bottom:.3rem}
+.map-pop-stats{font-size:.64rem;color:var(--text-muted);margin-bottom:.7rem}
+.map-pop-btn{background:var(--gold);border:none;color:#000;padding:.35rem .8rem;font-family:'Jost',sans-serif;font-size:.62rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;width:100%}
+
+/* CALCULATOR */
+#calculator{background:var(--bg-card);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:6rem 3rem}
+.calc-wrap{max-width:1200px;margin:0 auto}
+.calc-top{display:grid;grid-template-columns:1fr 1.2fr;gap:6rem;align-items:start;margin-bottom:2rem}
+.calc-fields{display:flex;flex-direction:column;gap:1.4rem}
+.form-grp{display:flex;flex-direction:column;gap:.5rem}
+.form-lbl{font-family:'Jost',sans-serif;font-size:.63rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--text-muted);display:flex;justify-content:space-between}
+.form-lbl span{color:var(--gold);font-weight:500}
+.form-inp{background:var(--bg-elevated);border:1px solid var(--border);border-bottom:1px solid rgba(201,168,76,.3);color:var(--text);padding:.85rem 1.1rem;font-family:'Jost',sans-serif;font-size:.95rem;font-weight:300;outline:none;transition:all var(--transition);width:100%}
+.form-inp:focus{border-color:var(--gold);background:rgba(201,168,76,.03)}
+.form-range{-webkit-appearance:none;width:100%;height:2px;background:rgba(201,168,76,.2);outline:none;margin-top:.5rem;cursor:pointer}
+.form-range::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--gold);cursor:pointer;transition:transform var(--transition)}
+.form-range::-webkit-slider-thumb:hover{transform:scale(1.4)}
+.range-lbls{display:flex;justify-content:space-between;font-size:.6rem;color:var(--text-dim);margin-top:.3rem}
+.calc-results{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border)}
+.calc-res-box{background:var(--bg-elevated);padding:2rem}
+.calc-res-lbl{font-family:'Jost',sans-serif;font-size:.6rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:.5rem}
+.calc-res-num{font-family:'Cormorant Garamond',serif;font-size:2.5rem;font-weight:300;color:var(--gold);line-height:1}
+.calc-res-num.sm{font-size:1.9rem}
+.calc-res-num.dim{color:rgba(201,168,76,.45)}
+.calc-res-sub{font-size:.65rem;color:var(--text-dim);margin-top:.3rem}
+.calc-bottom{background:var(--bg-elevated);padding:1.5rem 2rem;display:flex;gap:3rem;align-items:center;margin-top:1px;flex-wrap:wrap}
+.calc-bottom-item{display:flex;flex-direction:column;gap:.3rem}
+.calc-bot-lbl{font-size:.6rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim)}
+.calc-bot-val{font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--text)}
+.calc-disclaimer{font-size:.66rem;color:var(--text-dim);line-height:1.7;max-width:420px;margin-left:auto}
+
+/* CONTACT */
+#contact{padding:6rem 3rem;max-width:1200px;margin:0 auto}
+.contact-grid{display:grid;grid-template-columns:1fr 1.5fr;gap:5rem;margin-top:3rem}
+.agent-card{display:flex;gap:1.2rem;align-items:center;padding:1.2rem;border:1px solid var(--border);transition:border-color var(--transition);margin-bottom:1rem}
+.agent-card:hover{border-color:var(--gold)}
+.agent-img{width:68px;height:68px;object-fit:cover;border:1px solid var(--border)}
+.agent-name{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--text);margin-bottom:.2rem}
+.agent-role{font-size:.6rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:.4rem}
+.agent-contact{font-size:.72rem;color:var(--text-dim);line-height:1.7}
+.office-block{padding:1.5rem;border:1px solid var(--border);border-left:3px solid var(--gold);margin-top:1rem}
+.office-block h4{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--text);margin-bottom:.9rem}
+.office-detail{font-size:.75rem;color:var(--text-muted);line-height:2}
+.contact-form{display:flex;flex-direction:column;gap:1.1rem}
+.form-row2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-ta{background:var(--bg-elevated);border:1px solid var(--border);border-bottom:1px solid rgba(201,168,76,.3);color:var(--text);padding:1rem 1.1rem;font-family:'Jost',sans-serif;font-size:.85rem;font-weight:300;outline:none;transition:all var(--transition);width:100%;resize:none;min-height:115px}
+.form-ta:focus{border-color:var(--gold);background:rgba(201,168,76,.03)}
+.form-sel{background:var(--bg-elevated);border:1px solid var(--border);border-bottom:1px solid rgba(201,168,76,.3);color:var(--text);padding:.85rem 1.1rem;font-family:'Jost',sans-serif;font-size:.85rem;font-weight:300;outline:none;transition:all var(--transition);width:100%;appearance:none;cursor:pointer}
+.form-sel:focus{border-color:var(--gold)}
+.form-sel option{background:#111}
+.form-check{display:flex;align-items:flex-start;gap:.8rem;font-size:.7rem;color:var(--text-dim);line-height:1.6}
+.form-check input[type=checkbox]{accent-color:var(--gold);margin-top:3px;flex-shrink:0}
+.form-success{display:none;padding:1rem 1.5rem;border:1px solid var(--gold);background:var(--gold-dim);color:var(--gold);font-size:.78rem;text-align:center;letter-spacing:.05em}
+.form-success.show{display:block}
+
+/* FOOTER */
+footer{background:var(--bg-card);border-top:1px solid var(--border);padding:4rem 3rem 2rem}
+.footer-wrap{max-width:1200px;margin:0 auto}
+.footer-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;padding-bottom:3rem;border-bottom:1px solid var(--border);margin-bottom:2rem}
+.footer-logo{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:300;letter-spacing:.3em;color:var(--gold);text-transform:uppercase;margin-bottom:1rem}
+.footer-tag{font-size:.78rem;color:var(--text-dim);line-height:1.85;max-width:250px;margin-bottom:1.5rem}
+.footer-social{display:flex;gap:.7rem}
+.soc-link{width:30px;height:30px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:.72rem;text-decoration:none;transition:all var(--transition)}
+.soc-link:hover{border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
+.footer-col h5{font-family:'Jost',sans-serif;font-size:.62rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:1.2rem}
+.footer-links{list-style:none;display:flex;flex-direction:column;gap:.7rem}
+.footer-links a{font-size:.76rem;font-weight:300;color:var(--text-dim);text-decoration:none;transition:color var(--transition)}
+.footer-links a:hover{color:var(--gold)}
+.footer-bottom{display:flex;justify-content:space-between;align-items:center;font-size:.62rem;color:var(--text-dim)}
+
+/* MODAL */
+#modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(8px);z-index:1000;opacity:0;visibility:hidden;transition:all .4s ease}
+#modal-overlay.on{opacity:1;visibility:visible}
+#prop-modal{position:fixed;top:0;right:-100%;width:min(720px,95vw);height:100vh;background:var(--bg-modal);z-index:1001;overflow-y:auto;transition:right .5s cubic-bezier(.16,1,.3,1);border-left:1px solid var(--border)}
+#prop-modal.on{right:0}
+.modal-hdr{position:relative;height:360px;overflow:hidden;flex-shrink:0}
+.modal-img{width:100%;height:100%;object-fit:cover;filter:brightness(.82);display:block}
+.modal-hdr-grad{position:absolute;inset:0;background:linear-gradient(to top,rgba(8,8,8,1) 0%,transparent 55%)}
+.modal-close{position:absolute;top:1.5rem;right:1.5rem;background:rgba(8,8,8,.75);border:1px solid var(--border);color:var(--text-muted);width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;transition:all var(--transition);backdrop-filter:blur(8px);line-height:1}
+.modal-close:hover{border-color:var(--gold);color:var(--gold)}
+.modal-price-wrap{position:absolute;bottom:1.5rem;left:2rem}
+.modal-badge{display:inline-block;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.25);color:var(--gold);font-family:'Jost',sans-serif;font-size:.58rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;padding:.25rem .7rem;margin-bottom:.5rem}
+.modal-price{font-family:'Cormorant Garamond',serif;font-size:2.5rem;font-weight:300;color:var(--gold)}
+.modal-body-wrap{padding:2rem}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:300;color:var(--text);margin-bottom:.35rem}
+.modal-addr{font-size:.76rem;color:var(--text-dim);margin-bottom:2rem}
+.modal-stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);margin-bottom:2rem}
+.modal-stat{background:var(--bg-elevated);padding:1rem;text-align:center}
+.modal-stat-n{font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--gold);display:block;line-height:1}
+.modal-stat-l{font-family:'Jost',sans-serif;font-size:.58rem;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:var(--text-dim);margin-top:.25rem;display:block}
+.modal-desc{font-size:.83rem;color:var(--text-muted);line-height:1.95;margin-bottom:2rem;padding-bottom:2rem;border-bottom:1px solid var(--border)}
+.modal-feat-title{font-family:'Jost',sans-serif;font-size:.62rem;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-bottom:1rem}
+.modal-feats{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;margin-bottom:2rem;padding-bottom:2rem;border-bottom:1px solid var(--border)}
+.feat-item{font-size:.76rem;color:var(--text-muted);display:flex;align-items:center;gap:.5rem}
+.feat-item::before{content:'';width:4px;height:4px;background:var(--gold);border-radius:50%;flex-shrink:0}
+.modal-form{display:flex;flex-direction:column;gap:1rem}
+
+/* FAVORITES PANEL */
+#fav-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1001;opacity:0;visibility:hidden;transition:all .4s ease}
+#fav-overlay.on{opacity:1;visibility:visible}
+#fav-panel{position:fixed;top:0;right:-100%;width:min(400px,95vw);height:100vh;background:var(--bg-modal);z-index:1002;border-left:1px solid var(--border);transition:right .5s cubic-bezier(.16,1,.3,1);display:flex;flex-direction:column}
+#fav-panel.on{right:0}
+.panel-hdr{padding:2rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.panel-title{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:300;color:var(--text)}
+.panel-close{background:none;border:1px solid var(--border);color:var(--text-muted);width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.9rem;transition:all var(--transition)}
+.panel-close:hover{border-color:var(--gold);color:var(--gold)}
+.panel-body{flex:1;overflow-y:auto;padding:1.5rem}
+.fav-item{display:grid;grid-template-columns:78px 1fr auto;gap:1rem;align-items:center;padding:.9rem 0;border-bottom:1px solid var(--border);cursor:pointer}
+.fav-item-img{width:78px;height:56px;object-fit:cover}
+.fav-item-price{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--gold)}
+.fav-item-name{font-size:.78rem;color:var(--text);transition:color var(--transition)}
+.fav-item:hover .fav-item-name{color:var(--gold)}
+.fav-item-addr{font-size:.64rem;color:var(--text-dim);margin-top:.15rem}
+.fav-rm{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:.85rem;transition:color var(--transition);padding:.3rem}
+.fav-rm:hover{color:#c0392b}
+.fav-empty{text-align:center;padding:4rem 1.5rem;color:var(--text-dim);font-size:.8rem;line-height:2}
+.fav-empty-icon{font-size:2.5rem;opacity:.2;display:block;margin-bottom:1rem}
+
+/* TOAST */
+#toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg-elevated);border:1px solid var(--gold);color:var(--text);padding:.7rem 1.8rem;font-family:'Jost',sans-serif;font-size:.75rem;letter-spacing:.05em;z-index:9999;transition:transform .4s cubic-bezier(.16,1,.3,1);white-space:nowrap;pointer-events:none}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+/* REVEAL ANIMATION */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .8s ease,transform .8s cubic-bezier(.16,1,.3,1)}
+.reveal.on{opacity:1;transform:translateY(0)}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  nav{padding:1.2rem 1.5rem}
+  nav.scrolled{padding:.9rem 1.5rem}
+  .nav-links{display:none}
+  #hero{padding:0 1.5rem 5rem}
+  .hero-stats{display:none}
+  #quick-search{padding:0 1.5rem}
+  .qs-inner{flex-direction:column;background:none;gap:0}
+  .qs-field{border:1px solid var(--border);margin-bottom:1px}
+  .qs-btn{padding:1.2rem;width:100%}
+  #properties{padding:3rem 1.5rem}
+  #grid-view{grid-template-columns:1fr}
+  .calc-top{grid-template-columns:1fr;gap:2.5rem}
+  .calc-results{grid-template-columns:1fr 1fr}
+  .contact-grid{grid-template-columns:1fr;gap:3rem}
+  .footer-top{grid-template-columns:1fr 1fr;gap:2rem}
+  .footer-bottom{flex-direction:column;gap:.8rem;text-align:center}
+  .form-row2{grid-template-columns:1fr}
+  .modal-stats-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- PRELOADER -->
+<div id="preloader">
+  <div class="preloader-logo">AURUM</div>
+  <div class="preloader-sub">Estates &nbsp;·&nbsp; New York</div>
+  <div class="preloader-bar"></div>
+</div>
+
+<!-- NAVIGATION -->
+<nav id="mainnav">
+  <a href="#" class="nav-logo">Aurum <span class="nav-logo-sep"></span> Estates</a>
+  <ul class="nav-links">
+    <li><a href="#properties">Properties</a></li>
+    <li><a href="#map-section">Map</a></li>
+    <li><a href="#calculator">Calculator</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <div class="nav-actions">
+    <button class="btn-fav-nav" onclick="toggleFavPanel()">
+      ♡ Saved
+      <span class="fav-count" id="fav-count">0</span>
+    </button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-line"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">New York's Premier Luxury Agency</div>
+    <h1 class="hero-h1">
+      <span class="line">Where Every</span>
+      <span class="line">Residence</span>
+      <span class="line">Is a Legacy</span>
+    </h1>
+    <p class="hero-p">Curating extraordinary properties for discerning clients since 1994. From Billionaires' Row penthouses to waterfront villas, we present real estate as it should be.</p>
+    <div class="hero-cta">
+      <a href="#properties" class="btn-primary">Explore Properties →</a>
+      <a href="#contact" class="btn-outline">Schedule a Viewing</a>
+    </div>
+  </div>
+  <div class="hero-stats">
+    <div>
+      <div class="hero-stat-num">$2.4B</div>
+      <div class="hero-stat-label">Sales Volume 2024</div>
+    </div>
+    <div>
+      <div class="hero-stat-num">340+</div>
+      <div class="hero-stat-label">Properties Sold</div>
+    </div>
+    <div>
+      <div class="hero-stat-num">30yr</div>
+      <div class="hero-stat-label">Market Experience</div>
+    </div>
+  </div>
+  <div class="scroll-ind">
+    <span class="scroll-txt">Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- QUICK SEARCH BAR -->
+<div id="quick-search">
+  <div class="qs-inner">
+    <div class="qs-field">
+      <span class="qs-lbl">Property Type</span>
+      <select class="qs-sel" id="qs-type" onchange="syncAndFilter('type',this.value)">
+        <option value="">All Types</option>
+        <option value="Villa">Villa</option>
+        <option value="Penthouse">Penthouse</option>
+        <option value="House">House</option>
+        <option value="Apartment">Apartment</option>
+      </select>
+    </div>
+    <div class="qs-field">
+      <span class="qs-lbl">Max Price</span>
+      <select class="qs-sel" id="qs-price" onchange="syncAndFilter('price',this.value)">
+        <option value="">Any Price</option>
+        <option value="2000000">Up to $2M</option>
+        <option value="3500000">Up to $3.5M</option>
+        <option value="5000000">Up to $5M</option>
+        <option value="10000000">Up to $10M</option>
+      </select>
+    </div>
+    <div class="qs-field">
+      <span class="qs-lbl">Bedrooms</span>
+      <select class="qs-sel" id="qs-beds" onchange="syncAndFilter('beds',this.value)">
+        <option value="0">Any Bedrooms</option>
+        <option value="2">2+ Bedrooms</option>
+        <option value="3">3+ Bedrooms</option>
+        <option value="4">4+ Bedrooms</option>
+        <option value="5">5+ Bedrooms</option>
+      </select>
+    </div>
+    <div class="qs-field">
+      <span class="qs-lbl">Location</span>
+      <input class="qs-inp" id="qs-loc" placeholder="Neighborhood or area…" oninput="applyFilters()">
+    </div>
+    <button class="qs-btn" onclick="document.getElementById('properties').scrollIntoView({behavior:'smooth'})">Search</button>
+  </div>
+</div>
+
+<!-- PROPERTIES SECTION -->
+<section id="properties">
+  <div class="section-hdr reveal">
+    <div>
+      <span class="section-label">Our Portfolio</span>
+      <h2 class="section-title">Exceptional Properties</h2>
+    </div>
+    <div class="view-toggle">
+      <button class="view-btn active" id="btn-grid" onclick="setView('grid')" title="Grid View">⊞</button>
+      <button class="view-btn" id="btn-map" onclick="setView('map')" title="Map View">◉</button>
+    </div>
+  </div>
+
+  <div class="filter-bar reveal">
+    <select class="flt-sel" id="f-type" onchange="syncAndFilter('type',this.value)">
+      <option value="">All Types</option>
+      <option value="Villa">Villa</option>
+      <option value="Penthouse">Penthouse</option>
+      <option value="House">House</option>
+      <option value="Apartment">Apartment</option>
+    </select>
+    <select class="flt-sel" id="f-price" onchange="syncAndFilter('price',this.value)">
+      <option value="">Any Price</option>
+      <option value="2000000">Under $2M</option>
+      <option value="3500000">Under $3.5M</option>
+      <option value="5000000">Under $5M</option>
+    </select>
+    <select class="flt-sel" id="f-beds" onchange="syncAndFilter('beds',this.value)">
+      <option value="0">Any Beds</option>
+      <option value="2">2+ Beds</option>
+      <option value="3">3+ Beds</option>
+      <option value="4">4+ Beds</option>
+      <option value="5">5+ Beds</option>
+    </select>
+    <select class="flt-sel" id="f-baths" onchange="applyFilters()">
+      <option value="0">Any Baths</option>
+      <option value="3">3+ Baths</option>
+      <option value="4">4+ Baths</option>
+      <option value="5">5+ Baths</option>
+    </select>
+    <select class="flt-sel" id="f-sort" onchange="applyFilters()">
+      <option value="">Sort: Featured</option>
+      <option value="price-asc">Price ↑</option>
+      <option value="price-desc">Price ↓</option>
+      <option value="sqft">Largest First</option>
+    </select>
+  </div>
+
+  <div class="results-count reveal" id="results-count">Showing <em>12</em> properties</div>
+  <div id="grid-view"></div>
+
+  <div id="map-view" style="margin-top:1.5rem">
+    <div id="leaflet-map"></div>
+  </div>
+</section>
+
+<!-- CALCULATOR -->
+<section id="calculator">
+  <div class="calc-wrap">
+    <div class="calc-top">
+      <div>
+        <span class="section-label reveal">Financial Planning</span>
+        <h2 class="section-title reveal">Mortgage<br><em style="font-style:italic">Calculator</em></h2>
+        <div class="gold-divider reveal"></div>
+        <p class="reveal" style="font-size:.83rem;color:var(--text-muted);line-height:1.95;max-width:360px">Understand your investment before committing. Our calculator provides indicative monthly costs to help guide your financial decision.</p>
+      </div>
+      <div class="calc-fields reveal">
+        <div class="form-grp">
+          <label class="form-lbl">Home Price</label>
+          <input class="form-inp" type="number" id="c-price" value="2500000" oninput="calcMortgage()">
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Down Payment <span id="c-dp-pct">20%</span></label>
+          <input class="form-range" type="range" id="c-dp" min="5" max="60" value="20" oninput="document.getElementById('c-dp-pct').textContent=this.value+'%';calcMortgage()">
+          <div class="range-lbls"><span>5%</span><span>60%</span></div>
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Loan Term</label>
+          <select class="form-inp" id="c-term" onchange="calcMortgage()" style="cursor:pointer;appearance:none">
+            <option value="30">30 Years</option>
+            <option value="20">20 Years</option>
+            <option value="15">15 Years</option>
+            <option value="10">10 Years</option>
+          </select>
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Interest Rate <span id="c-rate-lbl">6.5%</span></label>
+          <input class="form-range" type="range" id="c-rate" min="2" max="12" step="0.1" value="6.5" oninput="document.getElementById('c-rate-lbl').textContent=parseFloat(this.value).toFixed(1)+'%';calcMortgage()">
+          <div class="range-lbls"><span>2%</span><span>12%</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="calc-results reveal">
+      <div class="calc-res-box">
+        <div class="calc-res-lbl">Monthly Payment</div>
+        <div class="calc-res-num" id="c-monthly">$15,822</div>
+        <div class="calc-res-sub">Principal &amp; Interest</div>
+      </div>
+      <div class="calc-res-box">
+        <div class="calc-res-lbl">Total Payment</div>
+        <div class="calc-res-num sm" id="c-total">$5,695,920</div>
+        <div class="calc-res-sub">Over loan term</div>
+      </div>
+      <div class="calc-res-box">
+        <div class="calc-res-lbl">Total Interest</div>
+        <div class="calc-res-num sm dim" id="c-interest">$3,695,920</div>
+        <div class="calc-res-sub">Cost of borrowing</div>
+      </div>
+    </div>
+    <div class="calc-bottom reveal">
+      <div class="calc-bottom-item">
+        <div class="calc-bot-lbl">Loan Amount</div>
+        <div class="calc-bot-val" id="c-loan">$2,000,000</div>
+      </div>
+      <div class="calc-bottom-item">
+        <div class="calc-bot-lbl">Down Payment</div>
+        <div class="calc-bot-val" id="c-down">$500,000</div>
+      </div>
+      <div class="calc-disclaimer">* Estimates are indicative only. Actual rates and payments will vary based on your credit profile and lender. Consult our financial advisors for a personalized analysis.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <span class="section-label reveal">Get In Touch</span>
+  <h2 class="section-title reveal">Begin Your<br><em style="font-family:'Cormorant Garamond',serif;font-style:italic">Search</em></h2>
+  <div class="gold-divider reveal"></div>
+  <div class="contact-grid">
+    <div>
+      <div class="agent-card reveal">
+        <img class="agent-img" src="https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&q=80" alt="Jonathan Harwell">
+        <div>
+          <div class="agent-name">Jonathan Harwell</div>
+          <div class="agent-role">Senior Partner</div>
+          <div class="agent-contact">+1 (212) 555-0192<br>j.harwell@aurumestates.com</div>
+        </div>
+      </div>
+      <div class="agent-card reveal">
+        <img class="agent-img" src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&q=80" alt="Isabelle Marchand">
+        <div>
+          <div class="agent-name">Isabelle Marchand</div>
+          <div class="agent-role">Luxury Specialist</div>
+          <div class="agent-contact">+1 (212) 555-0247<br>i.marchand@aurumestates.com</div>
+        </div>
+      </div>
+      <div class="office-block reveal">
+        <h4>Aurum Estates — New York</h4>
+        <div class="office-detail">
+          740 Park Avenue, Suite 12A<br>
+          New York, NY 10021<br><br>
+          Mon–Fri: 9:00am – 7:00pm<br>
+          Saturday: 10:00am – 5:00pm<br>
+          Sunday: By Appointment Only
+        </div>
+      </div>
+    </div>
+    <div class="reveal">
+      <form class="contact-form" onsubmit="submitContactForm(event)">
+        <div class="form-row2">
+          <div class="form-grp">
+            <label class="form-lbl">First Name</label>
+            <input class="form-inp" type="text" placeholder="First name" required>
+          </div>
+          <div class="form-grp">
+            <label class="form-lbl">Last Name</label>
+            <input class="form-inp" type="text" placeholder="Last name" required>
+          </div>
+        </div>
+        <div class="form-row2">
+          <div class="form-grp">
+            <label class="form-lbl">Email</label>
+            <input class="form-inp" type="email" placeholder="your@email.com" required>
+          </div>
+          <div class="form-grp">
+            <label class="form-lbl">Phone</label>
+            <input class="form-inp" type="tel" placeholder="+1 (000) 000-0000">
+          </div>
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Inquiry Type</label>
+          <select class="form-sel" required>
+            <option value="">Select inquiry type…</option>
+            <option>Schedule a Viewing</option>
+            <option>Property Valuation</option>
+            <option>Investment Consultation</option>
+            <option>General Inquiry</option>
+          </select>
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Budget Range</label>
+          <select class="form-sel">
+            <option value="">Select budget…</option>
+            <option>$1M – $2M</option>
+            <option>$2M – $4M</option>
+            <option>$4M – $7M</option>
+            <option>$7M+</option>
+          </select>
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Message</label>
+          <textarea class="form-ta" placeholder="Tell us about your requirements…"></textarea>
+        </div>
+        <div class="form-check">
+          <input type="checkbox" id="consent" required>
+          <label for="consent">I agree to be contacted by Aurum Estates regarding my inquiry and to receive relevant property information.</label>
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%;justify-content:center">Submit Inquiry →</button>
+        <div class="form-success" id="contact-success">✦ Thank you. A member of our team will be in touch within 24 hours.</div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-wrap">
+    <div class="footer-top">
+      <div>
+        <div class="footer-logo">Aurum Estates</div>
+        <div class="footer-tag">Three decades of excellence in New York luxury real estate. Where privacy meets prestige, and every transaction is a milestone.</div>
+        <div class="footer-social">
+          <a href="#" class="soc-link">in</a>
+          <a href="#" class="soc-link">ig</a>
+          <a href="#" class="soc-link">tw</a>
+          <a href="#" class="soc-link">yt</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h5>Properties</h5>
+        <ul class="footer-links">
+          <li><a href="#">Luxury Homes</a></li>
+          <li><a href="#">Penthouses</a></li>
+          <li><a href="#">Villas &amp; Estates</a></li>
+          <li><a href="#">New Developments</a></li>
+          <li><a href="#">Off-Market</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Services</h5>
+        <ul class="footer-links">
+          <li><a href="#">Buy</a></li>
+          <li><a href="#">Sell</a></li>
+          <li><a href="#">Valuation</a></li>
+          <li><a href="#">Investment</a></li>
+          <li><a href="#">Relocation</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Company</h5>
+        <ul class="footer-links">
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Our Team</a></li>
+          <li><a href="#">Press</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© 2025 Aurum Estates LLC. All rights reserved. Licensed Real Estate Broker — NY State.</div>
+      <div>740 Park Avenue, New York, NY 10021</div>
+    </div>
+  </div>
+</footer>
+
+<!-- PROPERTY MODAL -->
+<div id="modal-overlay" onclick="closeModal()"></div>
+<div id="prop-modal">
+  <div class="modal-hdr">
+    <img class="modal-img" id="modal-img" src="" alt="">
+    <div class="modal-hdr-grad"></div>
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-price-wrap">
+      <div class="modal-badge" id="modal-type-b"></div>
+      <div class="modal-price" id="modal-price-v"></div>
+    </div>
+  </div>
+  <div class="modal-body-wrap">
+    <h2 class="modal-title" id="modal-name-v"></h2>
+    <div class="modal-addr" id="modal-addr-v"></div>
+    <div class="modal-stats-grid" id="modal-stats-v"></div>
+    <p class="modal-desc" id="modal-desc-v"></p>
+    <div class="modal-feat-title">Property Features</div>
+    <div class="modal-feats" id="modal-feats-v"></div>
+    <div class="modal-feat-title">Arrange a Private Viewing</div>
+    <form class="modal-form" onsubmit="submitModalForm(event)">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div class="form-grp">
+          <label class="form-lbl">Your Name</label>
+          <input class="form-inp" type="text" placeholder="Full name" required>
+        </div>
+        <div class="form-grp">
+          <label class="form-lbl">Email</label>
+          <input class="form-inp" type="email" placeholder="your@email.com" required>
+        </div>
+      </div>
+      <div class="form-grp">
+        <label class="form-lbl">Preferred Date</label>
+        <input class="form-inp" type="date" required>
+      </div>
+      <div class="form-grp">
+        <label class="form-lbl">Message</label>
+        <textarea class="form-ta" style="min-height:90px" placeholder="Any specific questions about this property?"></textarea>
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%;justify-content:center">Request Viewing →</button>
+      <div class="form-success" id="modal-success">✦ Viewing request received. We will confirm within 2 hours.</div>
+    </form>
+  </div>
+</div>
+
+<!-- FAVORITES PANEL -->
+<div id="fav-overlay" onclick="toggleFavPanel()"></div>
+<div id="fav-panel">
+  <div class="panel-hdr">
+    <h3 class="panel-title">Saved Properties</h3>
+    <button class="panel-close" onclick="toggleFavPanel()">✕</button>
+  </div>
+  <div class="panel-body" id="fav-list"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ========== DATA ========== */
+const properties = [
+  {id:1,name:"The Glass Pavilion",type:"Villa",price:4500000,priceLabel:"$4.5M",
+   address:"18 Sutton Place, Manhattan",nbhd:"Manhattan",beds:5,baths:6,sqft:6800,year:2019,
+   lat:40.7505,lng:-73.9634,
+   img:"https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&q=80",
+   desc:"An architectural masterpiece of glass and steel perched above the East River. This extraordinary residence features soaring ceilings, floor-to-ceiling windows, and bespoke finishes that speak to a life lived beautifully. The expansive terrace offers unobstructed views across the Manhattan skyline at every hour.",
+   features:["Private rooftop terrace","24-hour concierge","Chef's kitchen","Home cinema","Wine cellar","Smart home system","Heated floors throughout","Private elevator"]},
+  {id:2,name:"Riverside Penthouse",type:"Penthouse",price:3200000,priceLabel:"$3.2M",
+   address:"500 West 30th St, Hudson Yards",nbhd:"Hudson Yards",beds:4,baths:4,sqft:4200,year:2021,
+   lat:40.7549,lng:-74.0020,
+   img:"https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80",
+   desc:"Set atop one of Hudson Yards' most distinguished towers, this full-floor penthouse commands panoramic views stretching from the Hudson River to Central Park. Bespoke Italian millwork and Calacatta marble surfaces define the interiors, while the wraparound terrace creates an unparalleled outdoor living experience.",
+   features:["Wraparound terrace","Private pool","Butler's pantry","Library/study","2-car garage","Private gym","Staff quarters","Private lift lobby"]},
+  {id:3,name:"Cobblestone Manor",type:"House",price:2800000,priceLabel:"$2.8M",
+   address:"72 Pierrepont St, Brooklyn Heights",nbhd:"Brooklyn Heights",beds:6,baths:5,sqft:5400,year:1905,
+   lat:40.6962,lng:-73.9934,
+   img:"https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80",
+   desc:"A meticulously restored 1905 brownstone in the heart of Brooklyn Heights, seamlessly blending historic character with contemporary luxury. Original plasterwork and oak floors meet a fully modernized kitchen and baths. The promenade-adjacent location is unparalleled.",
+   features:["Original hardwood floors","Period fireplaces","Walled rear garden","Private roof deck","Basement studio","Chef's kitchen","Custom millwork joinery","Pre-war ceiling details"]},
+  {id:4,name:"Sky Residence No. 7",type:"Apartment",price:1900000,priceLabel:"$1.9M",
+   address:"820 Park Avenue, Upper East Side",nbhd:"Upper East Side",beds:3,baths:3,sqft:2800,year:2018,
+   lat:40.7735,lng:-73.9565,
+   img:"https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80",
+   desc:"Situated on the prestigious Park Avenue corridor, this elegant cooperative has been thoughtfully renovated with a classic-modern sensibility. The generously proportioned rooms and high ceilings are quintessentially Upper East Side, complemented by a renovation of the highest standard.",
+   features:["Park Avenue address","Full-time doorman","Original prewar details","Renovated chef's kitchen","Marble-clad baths","Formal dining room","Staff room","Private storage"]},
+  {id:5,name:"The Meridian Loft",type:"Apartment",price:1400000,priceLabel:"$1.4M",
+   address:"45 Mercer Street, SoHo",nbhd:"SoHo",beds:2,baths:2,sqft:2200,year:2015,
+   lat:40.7243,lng:-73.9999,
+   img:"https://images.unsplash.com/photo-1560185893-a55cbc8c57e8?w=800&q=80",
+   desc:"A stunning SoHo loft conversion offering the perfect balance of industrial character and contemporary luxury. Exposed cast iron columns and 14-foot ceilings complement a sophisticated palette of materials. Steps from galleries, boutiques, and the finest restaurants downtown.",
+   features:["14ft cast iron ceilings","Exposed brick walls","Polished concrete floors","Open-plan layout","Custom handmade kitchen","Freestanding soaking tub","Juliet balconies","Prime SoHo block"]},
+  {id:6,name:"Parkview Estate",type:"House",price:3700000,priceLabel:"$3.7M",
+   address:"167 Central Park West",nbhd:"Upper West Side",beds:5,baths:5,sqft:5800,year:2010,
+   lat:40.7767,lng:-73.9817,
+   img:"https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80",
+   desc:"A landmark residence directly overlooking Central Park with exceptional park and skyline views from every principal room. This townhouse-style home offers an extraordinary blend of privacy and Central Park West prestige, with a generous garden and roof terrace.",
+   features:["Direct Central Park views","Private landscaped garden","Roof terrace","Home theater","Wine room","Private gym","Sauna suite","5-zone smart climate"]},
+  {id:7,name:"Azure Tower Suite",type:"Penthouse",price:5800000,priceLabel:"$5.8M",
+   address:"56 Leonard Street, Tribeca",nbhd:"Tribeca",beds:4,baths:5,sqft:5200,year:2022,
+   lat:40.7163,lng:-74.0086,
+   img:"https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800&q=80",
+   desc:"The crown jewel of Tribeca's most iconic Jenga Tower, designed by Herzog & de Meuron. This extraordinary duplex penthouse features a private plunge pool on the upper terrace and double-height living spaces with sweeping Hudson River views from every angle.",
+   features:["Private rooftop plunge pool","Duplex layout","Double-height living room","Hudson River panorama","Herringbone hardwood floors","Gallery-quality wall space","Private outdoor kitchen","24/7 concierge"]},
+  {id:8,name:"The Brownstone",type:"House",price:2100000,priceLabel:"$2.1M",
+   address:"44 Commerce Street, West Village",nbhd:"West Village",beds:4,baths:4,sqft:3600,year:1897,
+   lat:40.7358,lng:-74.0058,
+   img:"https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80",
+   desc:"One of the West Village's most cherished landmarked townhouses on a tree-lined cobblestone street. This 1897 Greek Revival home has been lovingly restored, preserving its timeless character while incorporating discreet modern luxuries that exceed contemporary standards.",
+   features:["Landmark townhouse status","Cobblestone street setting","Rear garden","Original fireplaces (x4)","Restored period details","Chef's kitchen","Basement bonus room","Period soaking tubs"]},
+  {id:9,name:"Harbor View Villa",type:"Villa",price:6200000,priceLabel:"$6.2M",
+   address:"10 River Terrace, Battery Park",nbhd:"Battery Park",beds:6,baths:7,sqft:8000,year:2020,
+   lat:40.7073,lng:-74.0175,
+   img:"https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800&q=80",
+   desc:"A singular waterfront compound commanding sweeping harbor views to the Statue of Liberty and beyond. This architecturally significant villa blurs the line between interior and exterior through its vast glazed pavilions, cascading terraces, and private marina access.",
+   features:["Harbor & Statue of Liberty views","Infinity-edge pool","Marina boat dock access","Separate guest house","Wellness spa","Smart home automation","Gym & yoga studio","Climate-controlled wine cave"]},
+  {id:10,name:"Chelsea Modern",type:"Apartment",price:1600000,priceLabel:"$1.6M",
+   address:"200 11th Avenue, Chelsea",nbhd:"Chelsea",beds:2,baths:2,sqft:1900,year:2017,
+   lat:40.7461,lng:-74.0027,
+   img:"https://images.unsplash.com/photo-1574362848149-11496d93a7c7?w=800&q=80",
+   desc:"In the heart of the gallery district, this exceptional sky-garage apartment by Rafael Viñoly allows residents to park their vehicle on their own floor. Full-height glass walls create a seamless indoor-outdoor connection with direct High Line and Hudson River views.",
+   features:["In-unit sky-garage","Full-height glass walls","High Line & Hudson views","Polished Calacatta marble","Open-plan great room","Chelsea gallery district","Full-service doorman","Shared roof terrace"]},
+  {id:11,name:"Gramercy Townhouse",type:"House",price:3000000,priceLabel:"$3.0M",
+   address:"34 Gramercy Park East",nbhd:"Gramercy Park",beds:5,baths:4,sqft:4800,year:1912,
+   lat:40.7375,lng:-73.9831,
+   img:"https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
+   desc:"A distinguished townhouse directly on the city's only private park, Gramercy Park, offering residents a rare key to this exclusive green sanctuary. The home retains all the grandeur of its 1912 origins, beautifully preserved across its five magnificent floors.",
+   features:["Gramercy Park key access","Only private park in NYC","Ornate original cornices","Formal library","Gracious reception rooms","Period fireplaces","Walled rear garden","Vintage wine cellar"]},
+  {id:12,name:"The Crown Penthouse",type:"Penthouse",price:8500000,priceLabel:"$8.5M",
+   address:"157 West 57th Street, Billionaires Row",nbhd:"Midtown",beds:5,baths:6,sqft:7200,year:2023,
+   lat:40.7659,lng:-73.9813,
+   img:"https://images.unsplash.com/photo-1459767129954-1b1c1f3d27b6?w=800&q=80",
+   desc:"The crown of One57, New York's most prestigious address on Billionaires' Row. At 1,200 feet above Manhattan, this full-floor penthouse delivers 360° panoramas encompassing Central Park, all five boroughs, and the Atlantic. The ultimate expression of urban luxury.",
+   features:["360° panoramic city views","Full-floor layout","Private dedicated lift","Central Park vistas","Award-winning chef's kitchen","Master suite spa bathroom","Private observatory room","Dedicated butler service"]}
+];
+
+/* ========== STATE ========== */
+const S = {
+  filtered:[...properties],
+  favorites:new Set(),
+  view:'grid',
+  map:null,
+  markers:[]
+};
+
+/* ========== INIT ========== */
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    document.getElementById('preloader').classList.add('hidden');
+    document.getElementById('hero').classList.add('loaded');
+  },2200);
+  renderGrid();
+  calcMortgage();
+  initReveal();
+  window.addEventListener('scroll',()=>{
+    document.getElementById('mainnav').classList.toggle('scrolled',scrollY>80);
+  });
+});
+
+/* ========== REVEAL ========== */
+function initReveal(){
+  const io=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}});
+  },{threshold:.08});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+}
+
+/* ========== VIEW TOGGLE ========== */
+function setView(v){
+  S.view=v;
+  document.getElementById('btn-grid').classList.toggle('active',v==='grid');
+  document.getElementById('btn-map').classList.toggle('active',v==='map');
+  document.getElementById('grid-view').style.display=v==='grid'?'grid':'none';
+  const mv=document.getElementById('map-view');
+  mv.classList.toggle('active',v==='map');
+  if(v==='map') initMap();
+}
+
+/* ========== GRID RENDER ========== */
+function renderGrid(){
+  const c=document.getElementById('grid-view');
+  document.getElementById('results-count').innerHTML=`Showing <em>${S.filtered.length}</em> propert${S.filtered.length===1?'y':'ies'}`;
+  if(!S.filtered.length){
+    c.innerHTML='<div class="no-results">No properties match your filters.<br><small style="opacity:.6">Try adjusting the search criteria above.</small></div>';
+    return;
+  }
+  c.innerHTML=S.filtered.map(p=>`
+    <div class="prop-card" onclick="openModal(${p.id})">
+      <div class="prop-img-wrap">
+        <img class="prop-img" src="${p.img}" alt="${p.name}" loading="lazy">
+        <div class="prop-badge">${p.type}</div>
+        <button class="prop-fav${S.favorites.has(p.id)?' on':''}" id="favbtn-${p.id}"
+          onclick="event.stopPropagation();toggleFav(${p.id})"
+          title="${S.favorites.has(p.id)?'Remove from saved':'Save property'}">
+          ${S.favorites.has(p.id)?'♥':'♡'}
+        </button>
+      </div>
+      <div class="prop-info">
+        <div class="prop-price">${p.priceLabel}</div>
+        <div class="prop-name">${p.name}</div>
+        <div class="prop-addr">📍 ${p.address}</div>
+        <div class="prop-stats">
+          <div class="p-stat">🛏 <b>${p.beds}</b> Beds</div>
+          <div class="p-stat">🚿 <b>${p.baths}</b> Baths</div>
+          <div class="p-stat">📐 <b>${p.sqft.toLocaleString()}</b> sqft</div>
+        </div>
+      </div>
+      <div class="prop-hover-overlay"><div class="btn-view">View Property</div></div>
+    </div>
+  `).join('');
+}
+
+/* ========== FILTERS ========== */
+function syncAndFilter(field,val){
+  const ids={type:['qs-type','f-type'],price:['qs-price','f-price'],beds:['qs-beds','f-beds']};
+  if(ids[field]) ids[field].forEach(id=>{const el=document.getElementById(id);if(el)el.value=val;});
+  applyFilters();
+}
+function applyFilters(){
+  const type=document.getElementById('f-type').value;
+  const maxPrice=parseInt(document.getElementById('f-price').value)||Infinity;
+  const minBeds=parseInt(document.getElementById('f-beds').value)||0;
+  const minBaths=parseInt(document.getElementById('f-baths').value)||0;
+  const loc=(document.getElementById('qs-loc').value||'').toLowerCase().trim();
+  const sort=document.getElementById('f-sort').value;
+  S.filtered=properties.filter(p=>{
+    if(type&&p.type!==type)return false;
+    if(p.price>maxPrice)return false;
+    if(p.beds<minBeds)return false;
+    if(p.baths<minBaths)return false;
+    if(loc&&!p.address.toLowerCase().includes(loc)&&!p.nbhd.toLowerCase().includes(loc))return false;
+    return true;
+  });
+  if(sort==='price-asc') S.filtered.sort((a,b)=>a.price-b.price);
+  else if(sort==='price-desc') S.filtered.sort((a,b)=>b.price-a.price);
+  else if(sort==='sqft') S.filtered.sort((a,b)=>b.sqft-a.sqft);
+  renderGrid();
+  if(S.view==='map'&&S.map) renderMarkers();
+}
+
+/* ========== MAP ========== */
+function initMap(){
+  if(S.map){renderMarkers();return}
+  const map=L.map('leaflet-map',{zoomControl:false}).setView([40.728,-73.993],12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+    attribution:'© OpenStreetMap © CARTO',maxZoom:19
+  }).addTo(map);
+  L.control.zoom({position:'bottomright'}).addTo(map);
+  S.map=map;
+  renderMarkers();
+}
+function renderMarkers(){
+  S.markers.forEach(m=>m.remove());
+  S.markers=[];
+  const icon=L.divIcon({
+    html:`<div style="width:12px;height:12px;background:#C9A84C;border:2px solid rgba(242,237,228,.8);border-radius:50%;box-shadow:0 0 10px rgba(201,168,76,.7)"></div>`,
+    className:'',iconSize:[12,12],iconAnchor:[6,6]
+  });
+  S.filtered.forEach(p=>{
+    const m=L.marker([p.lat,p.lng],{icon}).addTo(S.map);
+    m.bindPopup(`<div class="map-pop">
+      <div class="map-pop-price">${p.priceLabel}</div>
+      <div class="map-pop-name">${p.name}</div>
+      <div class="map-pop-stats">${p.beds} bd · ${p.baths} ba · ${p.sqft.toLocaleString()} sqft</div>
+      <button class="map-pop-btn" onclick="openModal(${p.id})">View Property →</button>
+    </div>`);
+    S.markers.push(m);
+  });
+}
+
+/* ========== MODAL ========== */
+function openModal(id){
+  const p=properties.find(x=>x.id===id);if(!p)return;
+  document.getElementById('modal-img').src=p.img;
+  document.getElementById('modal-type-b').textContent=p.type;
+  document.getElementById('modal-price-v').textContent=p.priceLabel;
+  document.getElementById('modal-name-v').textContent=p.name;
+  document.getElementById('modal-addr-v').textContent='📍 '+p.address;
+  document.getElementById('modal-stats-v').innerHTML=`
+    <div class="modal-stat"><span class="modal-stat-n">${p.beds}</span><span class="modal-stat-l">Bedrooms</span></div>
+    <div class="modal-stat"><span class="modal-stat-n">${p.baths}</span><span class="modal-stat-l">Bathrooms</span></div>
+    <div class="modal-stat"><span class="modal-stat-n">${p.sqft.toLocaleString()}</span><span class="modal-stat-l">Sq. Ft.</span></div>
+    <div class="modal-stat"><span class="modal-stat-n">${p.year}</span><span class="modal-stat-l">Year Built</span></div>`;
+  document.getElementById('modal-desc-v').textContent=p.desc;
+  document.getElementById('modal-feats-v').innerHTML=p.features.map(f=>`<div class="feat-item">${f}</div>`).join('');
+  document.getElementById('modal-success').classList.remove('show');
+  document.getElementById('prop-modal').classList.add('on');
+  document.getElementById('modal-overlay').classList.add('on');
+  document.body.style.overflow='hidden';
+}
+function closeModal(){
+  document.getElementById('prop-modal').classList.remove('on');
+  document.getElementById('modal-overlay').classList.remove('on');
+  document.body.style.overflow='';
+}
+
+/* ========== FAVORITES ========== */
+function toggleFav(id){
+  const added=!S.favorites.has(id);
+  if(added) S.favorites.add(id);
+  else S.favorites.delete(id);
+  const btn=document.getElementById(`favbtn-${id}`);
+  if(btn){btn.classList.toggle('on',added);btn.textContent=added?'♥':'♡';}
+  updateFavCount();
+  renderFavList();
+  showToast(added?'Property saved ♥':'Removed from saved');
+}
+function updateFavCount(){
+  const n=S.favorites.size;
+  const el=document.getElementById('fav-count');
+  el.textContent=n;
+  el.classList.toggle('show',n>0);
+}
+function toggleFavPanel(){
+  const p=document.getElementById('fav-panel');
+  const o=document.getElementById('fav-overlay');
+  const active=p.classList.toggle('on');
+  o.classList.toggle('on',active);
+  document.body.style.overflow=active?'hidden':'';
+  if(active)renderFavList();
+}
+function renderFavList(){
+  const c=document.getElementById('fav-list');
+  const favs=properties.filter(p=>S.favorites.has(p.id));
+  if(!favs.length){
+    c.innerHTML='<div class="fav-empty"><span class="fav-empty-icon">♡</span>No saved properties yet.<br>Click the heart icon on any listing to save it here.</div>';
+    return;
+  }
+  c.innerHTML=favs.map(p=>`
+    <div class="fav-item" onclick="openModal(${p.id});if(document.getElementById('fav-panel').classList.contains('on'))toggleFavPanel()">
+      <img class="fav-item-img" src="${p.img}" alt="${p.name}">
+      <div>
+        <div class="fav-item-price">${p.priceLabel}</div>
+        <div class="fav-item-name">${p.name}</div>
+        <div class="fav-item-addr">${p.address}</div>
+      </div>
+      <button class="fav-rm" onclick="event.stopPropagation();toggleFav(${p.id})" title="Remove">✕</button>
+    </div>
+  `).join('');
+}
+
+/* ========== CALCULATOR ========== */
+function calcMortgage(){
+  const price=parseFloat(document.getElementById('c-price').value)||0;
+  const dpPct=parseFloat(document.getElementById('c-dp').value)/100;
+  const years=parseInt(document.getElementById('c-term').value);
+  const annualRate=parseFloat(document.getElementById('c-rate').value)/100;
+  const r=annualRate/12,n=years*12;
+  const loan=price*(1-dpPct);
+  const down=price*dpPct;
+  let monthly=r>0?loan*(r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1):loan/n;
+  const total=monthly*n,interest=total-loan;
+  const f=v=>'$'+Math.round(v).toLocaleString();
+  document.getElementById('c-monthly').textContent=f(monthly);
+  document.getElementById('c-total').textContent=f(total);
+  document.getElementById('c-interest').textContent=f(interest);
+  document.getElementById('c-loan').textContent=f(loan);
+  document.getElementById('c-down').textContent=f(down);
+}
+
+/* ========== FORMS ========== */
+function submitContactForm(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');
+  btn.textContent='Sending…';btn.disabled=true;
+  setTimeout(()=>{
+    document.getElementById('contact-success').classList.add('show');
+    btn.style.display='none';e.target.reset();
+  },1200);
+}
+function submitModalForm(e){
+  e.preventDefault();
+  const btn=e.target.querySelector('button[type=submit]');
+  btn.textContent='Sending…';btn.disabled=true;
+  setTimeout(()=>{
+    document.getElementById('modal-success').classList.add('show');
+    btn.style.display='none';e.target.reset();
+  },1200);
+}
+
+/* ========== TOAST ========== */
+let toastTimer;
+function showToast(msg){
+  clearTimeout(toastTimer);
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+}
+</script>
+</body>
+</html>
